@@ -2,50 +2,55 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    // roles we use
+    public const ADMIN   = 'admin';
+    public const TEACHER = 'teacher';
+    public const STUDENT = 'student';
+    public const ALUMNI  = 'alumni';
+
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'phone',
-        'role',
-        'is_active'
+        'name','email','password','role','phone','is_active',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
+    protected $hidden = ['password','remember_token'];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    /** taught courses (if teacher) */
+    public function taughtCourses()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Course::class, 'teacher_id');
+    }
+
+    /** enrollments (student) */
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    /** courses via enrollments (student) */
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'enrollments')
+            ->withTimestamps()
+            ->withPivot('status','grade');
+    }
+
+    /** submissions (student) */
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class, 'student_id');
     }
 }
